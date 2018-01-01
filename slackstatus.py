@@ -76,7 +76,7 @@ def get_channel_unread(slack_bot_token):
     my_channels = [x for x in private_channels['groups']]
     for y in my_channels:
         if y["is_mpim"]: # multi-person IM mpdm-<anem>--<name>-1
-            name = ", ".join([y for y in y["name"].split("-") if y != 'mpdm' and len(y) > 1])
+            name = ", ".join([q for q in y["name"].split("-") if q != 'mpdm' and len(q) > 1])
             channels.append(Channel(name, ChannelType.CONVERSATION, y["unread_count"]))
         else:
             channels.append(Channel(y["name"], ChannelType.PRIVATE, y["unread_count"]))
