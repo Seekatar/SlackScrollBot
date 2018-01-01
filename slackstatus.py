@@ -1,5 +1,7 @@
-# To get token
-# https://api.slack.com/custom-integrations/legacy-tokens
+"""
+To get legacy token
+https://api.slack.com/custom-integrations/legacy-tokens
+"""
 
 import os
 from enum import Enum
@@ -32,12 +34,18 @@ def main():
     channels = get_channel_unread(slack_bot_token)
 
     unreads = [u for u in channels if u.unread > 0]
-    if len(unreads):
-        print("There are",len(unreads),"channels with unread items")
+    if unreads:
+        print("There are", len(unreads), "channels with unread items")
         for c in unreads:
             print(c)
     else:
         print("No unreads")
+
+def checkResult(result):
+    if result["ok"]:
+        return
+    else:
+        raise "Error from Slack: "+result["error"]
 
 def get_channel_unread(slack_bot_token):
     """ get the channels with unread counts
@@ -49,12 +57,14 @@ def get_channel_unread(slack_bot_token):
         "channels.list",
         exclude_archived="true"
     )
+    checkResult(public_channels)
     my_channels = [x for x in public_channels['channels'] if x['is_member']]
     for y in my_channels:
         channel = slack_client.api_call(
             "channels.info",
             channel=y["id"]
         )
+        checkResult(channel)
         channels.append(Channel(y["name"], ChannelType.PUBLIC, channel["channel"]["unread_count"]))
 
     private_channels = slack_client.api_call(
@@ -62,6 +72,7 @@ def get_channel_unread(slack_bot_token):
         exclude_archived="true",
         exclude_members="true"
     )
+    checkResult(private_channels)
     my_channels = [x for x in private_channels['groups']]
     for y in my_channels:
         if y["is_mpim"]: # multi-person IM mpdm-<anem>--<name>-1
