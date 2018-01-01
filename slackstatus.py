@@ -4,6 +4,9 @@ https://api.slack.com/custom-integrations/legacy-tokens
 """
 
 import os
+import sys
+sys.path.append("/home/pi/.local/lib/python2.7/site-packages")
+# print sys.path
 from enum import Enum
 from slackclient import SlackClient
 
