@@ -4,6 +4,7 @@ https://api.slack.com/custom-integrations/legacy-tokens
 """
 
 import os
+import time
 from enum import Enum
 from slackclient import SlackClient
 
@@ -53,10 +54,16 @@ def get_channel_unread(slack_bot_token):
     slack_client = SlackClient(slack_bot_token)
 
     channels = []
-    public_channels = slack_client.api_call(
-        "channels.list",
-        exclude_archived="true"
-    )
+    for i in range(10):
+        try:
+            public_channels = slack_client.api_call(
+                "channels.list",
+                exclude_archived="true"
+            )
+        except:
+            print("Exception", i, "trying to get to Slack")
+            time.sleep(3)
+
     checkResult(public_channels)
     my_channels = [x for x in public_channels['channels'] if x['is_member']]
     for y in my_channels:
