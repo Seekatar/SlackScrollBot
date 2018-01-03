@@ -7,9 +7,9 @@ import os
 import time
 import sys
 import threading
-sys.path.append("/home/pi/.local/lib/python2.7/site-packages")
-# print sys.path
 from enum import Enum
+
+sys.path.append("/home/pi/.local/lib/python2.7/site-packages")
 from slackclient import SlackClient
 
 class ChannelType(Enum):
@@ -29,42 +29,25 @@ class Channel:
     def __str__(self):
         return "%s %s %d" % (self.name, self.channel_type, self.unread)
 
-def main():
-    """ mainline
+class SlackPoller(threading.Thread):
+    """ Background thrad to do polling to Slack
     """
-    if not "SLACK_BOT_TOKEN" in os.environ:
-        raise "Must supply SLACK_BOT_TOKEN in envrion"
-
-    slack_bot_token = os.environ["SLACK_BOT_TOKEN"]
-    waitForIt(slack_bot_token)
-    channels = get_channel_unread(slack_bot_token)
-
-    unreads = [u for u in channels if u.unread > 0]
-    if unreads:
-        print("There are", len(unreads), "channels with unread items")
-        total = 0
-        for c in unreads:
-            print(c)
-            total += c.unread
-        print("With a total of",total)
-    else:
-        print("No unreads")
-
-def checkResult(result):
-    if result["ok"]:
-        return
-    else:
-        raise "Error from Slack: "+result["error"]
-
-class runner(threading.Thread):
 
     def __init__(self,slack_client):
-        super(runner,self).__init__()
+        super(SlackPoller, self).__init__()
         self.slack_client = slack_client
         self.lock = threading.Lock()
         self.unread_count = 0
 
+    def checkResult(self,result):
+        if result["ok"]:
+            return
+        else:
+            raise "Error from Slack: "+result["error"]
+
     def get_unread_count(self):
+        """ get the total unreads
+        """
         ret = 0
         with self.lock:
             ret = self.unread_count
@@ -73,14 +56,14 @@ class runner(threading.Thread):
     def run(self):
         while True:
             events = self.slack_client.rtm_read()
-            for l in events:
-                if not (l["type"] in ["presence_change","reconnect_url","hello"]):
+            for event in events:
+                if not (event["type"] in ["presence_change","reconnect_url", "hello"]):
                     channels = self.__getUnread()
-                    unreadCnt = 0
-                    for c in channels:
-                        unreadCnt += c.unread
+                    unreads = 0
+                    for channel in channels:
+                        unreads += channel.unread
                     with self.lock:
-                        self.unread_count = unreadCnt
+                        self.unread_count = unreads
             time.sleep(1)
 
     def __getUnread(self):
@@ -97,22 +80,23 @@ class runner(threading.Thread):
                 print("Exception", i, "trying to get to Slack")
                 time.sleep(3)
 
-        checkResult(public_channels)
+        self.checkResult(public_channels)
         my_channels = [x for x in public_channels['channels'] if x['is_member']]
         for y in my_channels:
             channel = self.slack_client.api_call(
                 "channels.info",
                 channel=y["id"]
             )
-            checkResult(channel)
-            channels.append(Channel(y["name"], ChannelType.PUBLIC, channel["channel"]["unread_count"]))
+            self.checkResult(channel)
+            channels.append(Channel(y["name"], ChannelType.PUBLIC,
+                                    channel["channel"]["unread_count"]))
 
         private_channels = self.slack_client.api_call(
             "groups.list",
             exclude_archived="true",
             exclude_members="true"
         )
-        checkResult(private_channels)
+        self.checkResult(private_channels)
         my_channels = [x for x in private_channels['groups']]
         for y in my_channels:
             if y["is_mpim"]: # multi-person IM mpdm-<anem>--<name>-1
@@ -123,62 +107,35 @@ class runner(threading.Thread):
 
         return channels
 
-def waitForIt(slack_bot_token):
+def start_poller(slack_bot_token):
     """ get the channels with unread counts
     """
     slack_client = SlackClient(slack_bot_token)
     if slack_client.rtm_connect(with_team_state=False):
-        thd = runner(slack_client)
+        thd = SlackPoller(slack_client)
         thd.start()
 
-        for i in range(1000):
-            print(i,thd.get_unread_count())
-            time.sleep(1)
+        return thd
     else:
-        print("Connection Failed")
+        raise "Connection failed"
 
-
-def get_channel_unread(slack_bot_token):
-    """ get the channels with unread counts
+def main():
+    """ mainline
     """
-    slack_client = SlackClient(slack_bot_token)
+    if not "SLACK_BOT_TOKEN" in os.environ:
+        raise "Must supply SLACK_BOT_TOKEN in envrion"
 
-    channels = []
-    for i in range(10):
-        try:
-            public_channels = slack_client.api_call(
-                "channels.list",
-                exclude_archived="true"
-            )
-        except:
-            print("Exception", i, "trying to get to Slack")
-            time.sleep(3)
+    slack_bot_token = os.environ["SLACK_BOT_TOKEN"]
+    thd = start_poller(slack_bot_token)
+    while True:
 
-    checkResult(public_channels)
-    my_channels = [x for x in public_channels['channels'] if x['is_member']]
-    for y in my_channels:
-        channel = slack_client.api_call(
-            "channels.info",
-            channel=y["id"]
-        )
-        checkResult(channel)
-        channels.append(Channel(y["name"], ChannelType.PUBLIC, channel["channel"]["unread_count"]))
-
-    private_channels = slack_client.api_call(
-        "groups.list",
-        exclude_archived="true",
-        exclude_members="true"
-    )
-    checkResult(private_channels)
-    my_channels = [x for x in private_channels['groups']]
-    for y in my_channels:
-        if y["is_mpim"]: # multi-person IM mpdm-<anem>--<name>-1
-            name = ", ".join([q for q in y["name"].split("-") if q != 'mpdm' and len(q) > 1])
-            channels.append(Channel(name, ChannelType.CONVERSATION, y["unread_count"]))
+        total = thd.get_unread_count()
+        if total > 0:
+            print("With a total of", total)
         else:
-            channels.append(Channel(y["name"], ChannelType.PRIVATE, y["unread_count"]))
+            print("No unreads")
+        time.sleep(1)
 
-    return channels
 
 if __name__ == "__main__":
     main()

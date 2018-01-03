@@ -1,3 +1,4 @@
+#! /usr/bin/python
 import os
 import time
 import scrollphathd as hat
@@ -25,7 +26,7 @@ def show_unreads(prev_count, new_count):
         for i in range(new_count):
             hat.set_pixel(i,6,BRIGHTNESS)
             hat.show()
-        for i in range(new_count,prev_count):
+        for i in range(new_count-1,prev_count):
             hat.set_pixel(i,6,0)
             hat.show()
 
