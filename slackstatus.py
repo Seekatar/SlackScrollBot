@@ -111,13 +111,17 @@ def start_poller(slack_bot_token):
     """ get the channels with unread counts
     """
     slack_client = SlackClient(slack_bot_token)
-    if slack_client.rtm_connect(with_team_state=False):
-        thd = SlackPoller(slack_client)
-        thd.start()
+    for i in range(10):
+        try:
+            if slack_client.rtm_connect(with_team_state=False):
+                thd = SlackPoller(slack_client)
+                thd.start()
 
-        return thd
-    else:
-        raise "Connection failed"
+                return thd
+        except:
+            print("Exception", i, "trying to get to Slack")
+            time.sleep(3)
+    raise "Never connected after 30 secs!"
 
 def main():
     """ mainline
