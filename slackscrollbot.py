@@ -61,8 +61,13 @@ def main():
     try:
         while True:
             hat.clear_rect(0, 0, 17, 6)
-            hat.write_string(time.strftime("%H:%M"),
-                             x=0, y=1,
+            timeStr = time.strftime("%I:%M")
+            x = 0
+            if timeStr[0] == '0':
+                x = 4
+                timeStr = timeStr[1:]
+            hat.write_string(timeStr,
+                             x=x, y=1,
                              font=font5x5,
                              brightness=BRIGHTNESS)
 
