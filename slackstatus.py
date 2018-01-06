@@ -59,36 +59,49 @@ class SlackPoller(threading.Thread):
             ret = self.unread_count
         return ret
 
+    def __set_unreads__(self):
+        unreads = 0
+        for channel in self.channel_counts.values():
+            if self.verbose:
+                print(channel.name, "has", channel.unread, "unreads")
+            unreads += channel.unread
+        with self.lock:
+            self.unread_count = unreads
+
     def run(self):
-        self.__getUnread()
+        self.__get_unread__()
         while True:
             try:
                 events = self.slack_client.rtm_read()
                 for event in events:
-                    if not (event["type"] in ["presence_change","reconnect_url", "hello"]):
-                        channels = self.__getUnread()
-                        unreads = 0
-                        for channel in channels:
-                            if self.verbose:
-                                print(channel.name, "has", channel.unread, "unreads")
-                            unreads += channel.unread
-                        with self.lock:
-                            self.unread_count = unreads
+                    print("Got event",event["type"])
+                    if "unread_count_display" in event.keys():
+                        ## channels = self.__get_unread__()
+                        print("Set count on",self.channel_counts[event["channel"]].name)
+                        self.channel_counts[event["channel"]].unread = event["unread_count_display"]
+                        self.__set_unreads__()
+                    elif event["type"] == "message" and not "subtype" in event.keys() and not "edit" in event.keys():
+                        print("Added 1 to ",self.channel_counts[event["channel"]].name)
+                        self.channel_counts[event["channel"]].unread += 1
+                        self.__set_unreads__()
                 time.sleep(1)
-            except Exception as e:
-                print("Exception in run thread", e)
+            except ConnectionAbortedError as abortException:
+                print("Lost connection, TODO retry")
+            except Exception as exception:
+                print("Exception in run thread on event", event, exception, type(exception))
                 traceback.print_tb(sys.exc_info()[2])
 
-    def __getUnread(self):
+    def __get_unread__(self):
         """ get the channels with unread counts
         """
-        channels = []
         for i in range(10):
             try:
                 public_channels = self.slack_client.api_call(
                     "channels.list",
-                    exclude_archived="true"
+                    exclude_archived="true",
+                    exclude_members="true"
                 )
+                break
             except Exception:
                 print("Exception", i, "trying to get to Slack")
                 time.sleep(3)
@@ -101,8 +114,9 @@ class SlackPoller(threading.Thread):
                 channel=y["id"]
             )
             self.checkResult(channel)
-            channels.append(Channel(y["name"], ChannelType.PUBLIC,
-                                    channel["channel"]["unread_count_display"]))
+            self.channel_counts[y["id"]] = Channel(y["name"], ChannelType.PUBLIC,
+                                    channel["channel"]["unread_count_display"],
+                                    y["id"])
 
         private_channels = self.slack_client.api_call(
             "groups.list",
@@ -114,11 +128,11 @@ class SlackPoller(threading.Thread):
         for y in my_channels:
             if y["is_mpim"]: # multi-person IM mpdm-<anem>--<name>-1
                 name = ", ".join([q for q in y["name"].split("-") if q != 'mpdm' and len(q) > 1])
-                channels.append(Channel(name, ChannelType.CONVERSATION, y["unread_count_display"]))
+                self.channel_counts[y["id"]] = Channel(name, ChannelType.CONVERSATION, y["unread_count_display"],y["id"])
             else:
-                channels.append(Channel(y["name"], ChannelType.PRIVATE, y["unread_count_display"]))
+                self.channel_counts[y["id"]] = Channel(y["name"], ChannelType.PRIVATE, y["unread_count_display"],y["id"])
+        self.__set_unreads__()
 
-        return channels
 
 def start_poller(slack_bot_token, verbose=False):
     """ get the channels with unread counts
@@ -145,13 +159,12 @@ def main():
 
     slack_bot_token = os.environ["SLACK_BOT_TOKEN"]
     thd = start_poller(slack_bot_token, True)
+    i = 0
     while True:
 
         total = thd.get_unread_count()
-        if total > 0:
-            print("Total unreads", total)
-        else:
-            print("No unreads")
+        print("[", i ,"] Total unreads", total)
+        i += 1
         time.sleep(5)
 
 
