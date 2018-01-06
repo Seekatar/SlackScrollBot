@@ -34,7 +34,7 @@ class Channel:
 class SlackPoller(threading.Thread):
     """ Background thrad to do polling to Slack
     """
-    
+
     def __init__(self,slack_client,verbose=False):
         super(SlackPoller, self).__init__()
         self.slack_client = slack_client
@@ -42,6 +42,7 @@ class SlackPoller(threading.Thread):
         self.unread_count = 0
         self.verbose = verbose
         self.channel_counts = {}
+        self.stopped = False
 
     def checkResult(self,result):
         if result["ok"]:
@@ -70,7 +71,7 @@ class SlackPoller(threading.Thread):
 
     def run(self):
         self.__get_unread__()
-        while True:
+        while not self.stopped:
             try:
                 events = self.slack_client.rtm_read()
                 for event in events:
@@ -90,6 +91,12 @@ class SlackPoller(threading.Thread):
             except Exception as exception:
                 print("Exception in run thread on event", event, exception, type(exception))
                 traceback.print_tb(sys.exc_info()[2])
+
+    def stop(self):
+        print("Stopping....")
+        self.stopped = True
+        self.join()
+        print("Stopped.")
 
     def __get_unread__(self):
         """ get the channels with unread counts
@@ -147,8 +154,8 @@ def start_poller(slack_bot_token, verbose=False):
                 return thd
         except:
                 pass
-        print("Trying", i ,"to get to Slack")
-    time.sleep(5)
+        print("Try", i ,"to get to Slack")
+        time.sleep(5)
     raise Exception("Never connected after 60 secs!")
 
 def main():
@@ -160,12 +167,14 @@ def main():
     slack_bot_token = os.environ["SLACK_BOT_TOKEN"]
     thd = start_poller(slack_bot_token, True)
     i = 0
-    while True:
-
-        total = thd.get_unread_count()
-        print("[", i ,"] Total unreads", total)
-        i += 1
-        time.sleep(5)
+    try:
+        while True:
+            total = thd.get_unread_count()
+            print("[", i ,"] Total unreads", total)
+            i += 1
+            time.sleep(5)
+    except KeyboardInterrupt:
+        thd.stop()
 
 
 if __name__ == "__main__":

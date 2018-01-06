@@ -58,25 +58,27 @@ def main():
 
     poller = slackstatus.start_poller(slack_bot_token)
 
-    while True:
-        hat.clear_rect(0, 0, 17, 6)
-        hat.write_string(time.strftime("%H:%M"),
-                         x=0, y=1,
-                         font=font5x5,
-                         brightness=BRIGHTNESS)
+    try:
+        while True:
+            hat.clear_rect(0, 0, 17, 6)
+            hat.write_string(time.strftime("%H:%M"),
+                             x=0, y=1,
+                             font=font5x5,
+                             brightness=BRIGHTNESS)
 
-        now = int(time.time())
-        if now % 2 == 0:
-            hat.clear_rect(8, 1, 1, 6)
-        hat.show()
+            now = int(time.time())
+            if now % 2 == 0:
+                hat.clear_rect(8, 1, 1, 6)
+            hat.show()
 
-        new_unreads = poller.get_unread_count()
-        if unread_count != new_unreads and new_unreads > 0:
-            print("New count is", new_unreads)
-            show_unreads(unread_count, new_unreads)
-        unread_count = new_unreads
-        time.sleep(.5)
-
+            new_unreads = poller.get_unread_count()
+            if unread_count != new_unreads and new_unreads > 0:
+                print("New count is", new_unreads)
+                show_unreads(unread_count, new_unreads)
+            unread_count = new_unreads
+            time.sleep(.5)
+    except KeyboardInterrupt:
+        poller.stop()
 
 if __name__ == "__main__":
     main()
