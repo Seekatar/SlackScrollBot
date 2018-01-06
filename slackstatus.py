@@ -43,6 +43,7 @@ class SlackPoller(threading.Thread):
         self.verbose = verbose
         self.channel_counts = {}
         self.stopped = False
+        self.user_id = None
 
     def checkResult(self,result):
         if result["ok"]:
@@ -71,6 +72,13 @@ class SlackPoller(threading.Thread):
 
     def run(self):
         self.__get_unread__()
+
+        identity = self.slack_client.api_call(
+            "auth.test",
+            token=self.slack_client.token
+        )
+        self.user_id = identity["user_id"]
+
         while not self.stopped:
             try:
                 events = self.slack_client.rtm_read()
@@ -81,7 +89,9 @@ class SlackPoller(threading.Thread):
                         print("Set count on",self.channel_counts[event["channel"]].name)
                         self.channel_counts[event["channel"]].unread = event["unread_count_display"]
                         self.__set_unreads__()
-                    elif event["type"] == "message" and not "subtype" in event.keys() and not "edit" in event.keys():
+                    elif event["type"] == "message" and not "subtype" in event.keys() \
+                            and not "edit" in event.keys() \
+                            and event["user"] != self.user_id:
                         print("Added 1 to ",self.channel_counts[event["channel"]].name)
                         self.channel_counts[event["channel"]].unread += 1
                         self.__set_unreads__()
