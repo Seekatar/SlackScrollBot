@@ -69,6 +69,7 @@ class SlackPoller(threading.Thread):
             unreads += channel.unread
         with self.lock:
             self.unread_count = unreads
+        print("New unread count is",unreads)
 
     def run(self):
         self.__get_unread__()
@@ -86,14 +87,16 @@ class SlackPoller(threading.Thread):
                     print("Got event",event["type"])
                     if "unread_count_display" in event.keys():
                         ## channels = self.__get_unread__()
-                        print("Set count on",self.channel_counts[event["channel"]].name)
-                        self.channel_counts[event["channel"]].unread = event["unread_count_display"]
+                        channel = self.__get_channel__(ChannelType.CONVERSATION,event)
+                        print("Set count on",channel.name,"to",event["unread_count_display"])
+                        channel.unread = event["unread_count_display"]
                         self.__set_unreads__()
                     elif event["type"] == "message" and not "subtype" in event.keys() \
                             and not "edit" in event.keys() \
                             and event["user"] != self.user_id:
-                        print("Added 1 to ",self.channel_counts[event["channel"]].name)
-                        self.channel_counts[event["channel"]].unread += 1
+                        channel = self.__get_channel__(ChannelType.CONVERSATION,event)
+                        print("Added 1 to ",channel.name)
+                        channel.unread += 1
                         self.__set_unreads__()
                 time.sleep(1)
             except ConnectionAbortedError as abortException:
@@ -107,6 +110,18 @@ class SlackPoller(threading.Thread):
         self.stopped = True
         self.join()
         print("Stopped.")
+
+    def __get_channel__(self,channel_type,event):
+        """ get the channel, adding it if needed
+        """
+        channel_id = event["channel"]
+        if channel_id in self.channel_counts.keys():
+            return self.channel_counts[channel_id]
+        else:
+            print("Adding on-the-fly for",event)
+            newChannel = Channel("Added one",channel_type,0,channel_id)
+            self.channel_counts[channel_id] = newChannel
+            return newChannel
 
     def __get_unread__(self):
         """ get the channels with unread counts

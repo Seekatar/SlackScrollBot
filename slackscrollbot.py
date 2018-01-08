@@ -18,15 +18,14 @@ def show_unreads(prev_count, new_count):
         for i in range(16, -1, -1):
             hat.set_pixel(i, 6, 0)
             hat.show()
-    if new_count > 0:
-        if new_count > 17:
-            new_count = 17
-        for i in range(new_count):
-            hat.set_pixel(i, 6, BRIGHTNESS)
-            hat.show()
-        for i in range(new_count-1, prev_count):
-            hat.set_pixel(i, 6, 0)
-            hat.show()
+    if new_count > 17:
+        new_count = 17
+    for i in range(new_count):
+        hat.set_pixel(i, 6, BRIGHTNESS)
+        hat.show()
+    for i in range(new_count-1, prev_count):
+        hat.set_pixel(i, 6, 0)
+        hat.show()
 
 def main():
     unread_count = -1
@@ -77,8 +76,8 @@ def main():
             hat.show()
 
             new_unreads = poller.get_unread_count()
-            if unread_count != new_unreads and new_unreads > 0:
-                print("New count is", new_unreads)
+            if unread_count != new_unreads:
+                print("New count for UI is", new_unreads)
                 show_unreads(unread_count, new_unreads)
             unread_count = new_unreads
             time.sleep(.5)
