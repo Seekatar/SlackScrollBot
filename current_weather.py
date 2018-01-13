@@ -3,12 +3,14 @@
 import os
 import threading
 import requests
+from processor import Runner
 
-class CurrentWeather:
+class CurrentWeather(Runner):
     """ get the current weather
     """
 
     def __init__(self, zip_code, api_key, frequency):
+        super(CurrentWeather, self).__init__("CurrentWeather")
         self.url = "http://api.openweathermap.org/data/2.5/weather?zip="+zip_code+\
                  ",us&appid="+api_key+"&units=Imperial"
         self.frequency = frequency
