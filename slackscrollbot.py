@@ -42,7 +42,7 @@ def main():
     if not "SLACK_BOT_TOKEN" in os.environ:
         raise "Must supply SLACK_BOT_TOKEN in envrion"
 
-    slack_bot_token = os.environ["SLACK_BOT_WEATHER_KEY"]
+    slack_bot_token = os.environ["SLACK_BOT_TOKEN"]
 
     if not "SLACK_BOT_WEATHER_KEY" in os.environ:
         raise "Must supply SLACK_BOT_WEATHER_KEY in envrion"
@@ -86,23 +86,26 @@ def main():
         processor.stop()
 
 if __name__ == "__main__":
-    show_unreads(0, 5)
-    time.sleep(.5)
-    show_unreads(5, 6)
-    time.sleep(.5)
-    show_unreads(6, 9)
-    time.sleep(.5)
-    show_unreads(9, 9)
-    print("same number")
-    time.sleep(2)
-    show_unreads(9, 6)
-    print("lower")
-    time.sleep(.5)
-    show_unreads(6, 16)
-    time.sleep(.5)
-    show_unreads(16, 20)
-    print("20")
-    time.sleep(5)
+
+    debug = False
+    if debug:
+        show_unreads(0, 5)
+        time.sleep(.5)
+        show_unreads(5, 6)
+        time.sleep(.5)
+        show_unreads(6, 9)
+        time.sleep(.5)
+        show_unreads(9, 9)
+        print("same number")
+        time.sleep(2)
+        show_unreads(9, 6)
+        print("lower")
+        time.sleep(.5)
+        show_unreads(6, 16)
+        time.sleep(.5)
+        show_unreads(16, 20)
+        print("20")
+        time.sleep(5)
 
     main()
     print("All done")
