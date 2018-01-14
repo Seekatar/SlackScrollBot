@@ -7,11 +7,29 @@ from processor import Processor
 from slackstatus import SlackPoller
 from current_weather import CurrentWeather
 
-
-
 hat.rotate(180)
 BRIGHTNESS = .25
 BRIGHTERNESS = .7
+
+def fade_text(curr_text: str, next_text: str, fade_time: int):
+    """ fade from one text to another
+    """
+    curr_brightness = BRIGHTNESS
+    second_brightness = 0
+    sleep_time = fade_time / 100.0
+    step = BRIGHTNESS / 100.0
+
+    for i in range(100):
+        curr_brightness -= step
+        second_brightness += step
+        if curr_brightness < second_brightness:
+            hat.write_string(curr_text, brightness=curr_brightness, y=1, font=font5x5)
+            hat.write_string(next_text, brightness=second_brightness, y=1, font=font5x5)
+        else:
+            hat.write_string(curr_text, brightness=second_brightness, y=1, font=font5x5)
+            hat.write_string(next_text, brightness=curr_brightness, y=1, font=font5x5)
+        hat.show()
+        time.sleep(sleep_time)
 
 def show_unreads(prev_count, new_count):
     """ show the unread count along the bottom
@@ -32,6 +50,47 @@ def show_unreads(prev_count, new_count):
     for i in range(new_count-1, prev_count):
         hat.set_pixel(i, 6, 0)
         hat.show()
+
+def get_time_str():
+    time_string = time.strftime("%I:%M")
+    if time_string[0] == '0':
+        time_string = time_string[1:]
+    return time_string
+
+def show_time():
+    """ show the time
+    """
+    hat.clear_rect(0, 0, 17, 6)
+    x_coord = 0
+    time_string = get_time_str()
+    if len(time_string) == 4:
+        x_coord = 4
+    hat.write_string(time_string,
+                     x=x_coord, y=1,
+                     font=font5x5,
+                     brightness=BRIGHTNESS)
+
+    now = int(time.time())
+
+    # make colon flash
+    if now % 2 == 0:
+        hat.clear_rect(8, 1, 1, 5)
+    hat.show()
+    return time_string
+
+def get_temp_str(temperature):
+    return " "+int(temperature)
+
+def show_temp(temperature):
+    """ show the current temperature
+    """
+    hat.clear_rect(0, 0, 17, 6)
+    hat.write_string(get_temp_str(temperature),
+                     y=1,
+                     font=font5x5,
+                     brightness=BRIGHTNESS)
+
+    return temperature
 
 def main():
     """ mainline
@@ -58,23 +117,27 @@ def main():
 
     processor.start()
 
+    showing_time = True
+    prev_string = ""
+    linger_time = 10
+    last_change_time = time.time()
     try:
         while True:
-            hat.clear_rect(0, 0, 17, 6)
-            time_string = time.strftime("%I:%M")
-            x_coord = 0
-            if time_string[0] == '0':
-                x_coord = 4
-                time_string = time_string[1:]
-            hat.write_string(time_string,
-                             x=x_coord, y=1,
-                             font=font5x5,
-                             brightness=BRIGHTNESS)
 
-            now = int(time.time())
-            if now % 2 == 0:
-                hat.clear_rect(8, 1, 1, 5)
-            hat.show()
+            if time.time() > last_change_time + linger_time:
+                if showing_time:
+                    next_string = get_temp_str(cw.get_temperature())
+                else:
+                    next_string = get_time_str()
+
+                showing_time = not showing_time
+                fade_text(prev_string, next_string, 1)
+                last_change_time = time.time()
+
+            if showing_time:
+                prev_string = show_time()
+            else:
+                prev_string = show_temp(cw.get_temperature())
 
             new_unreads = poller.get_unread_count()
             if unread_count != new_unreads:
