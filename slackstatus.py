@@ -9,11 +9,10 @@ import sys
 import threading
 import traceback
 from enum import Enum
+from slackclient import SlackClient
 from processor import Runner
 
-# pylint: disable=C0413,W0703
-sys.path.append("/home/pi/.local/lib/python2.7/site-packages")
-from slackclient import SlackClient
+# pylint: disable=W0703
 
 class ChannelType(Enum):
     """ Type of channel
@@ -124,7 +123,7 @@ class SlackPoller(Runner):
             if "event" in dir():
                 print("Exception in run thread on event", event, exception, type(exception))
             else:
-                print("Exception",exception,type(exception))
+                print("Exception", exception, type(exception))
             traceback.print_tb(sys.exc_info()[2])
 
         return self.delay

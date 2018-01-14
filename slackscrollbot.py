@@ -1,4 +1,6 @@
 #! /usr/bin/python
+""" main module for running slack scroll bot
+"""
 import os
 import time
 import scrollphathd as hat
@@ -11,7 +13,7 @@ hat.rotate(180)
 BRIGHTNESS = .25
 BRIGHTERNESS = .7
 
-def fade_text(curr_text: str, next_text: str, curr_x: int=1, next_x: int=1,fade_time: int=1):
+def fade_text(curr_text: str, next_text: str, curr_x: int = 1, next_x: int = 1, fade_time: int = 1):
     """ fade from one text to another
     """
     curr_brightness = BRIGHTNESS
@@ -20,6 +22,7 @@ def fade_text(curr_text: str, next_text: str, curr_x: int=1, next_x: int=1,fade_
     range_limit = int(BRIGHTNESS / step)
     sleep_time = fade_time / range_limit
 
+    # pylint: disable=W0612
     for i in range(range_limit):
         curr_brightness -= step
         if curr_brightness < 0:
@@ -56,18 +59,20 @@ def show_unreads(prev_count, new_count):
         hat.show()
 
 def get_time_str():
+    """ get the time, removing leading 0, calculate x
+    """
     time_string = time.strftime("%I:%M")
     x_coord = 0
     if time_string[0] == '0':
         time_string = time_string[1:]
         x_coord = 4
-    return time_string,x_coord
+    return time_string, x_coord
 
 def show_time():
     """ show the time
     """
     hat.clear_rect(0, 1, 17, 6)
-    time_string,x_coord = get_time_str()
+    time_string, x_coord = get_time_str()
     hat.write_string(time_string,
                      x=x_coord, y=1,
                      font=font5x5,
@@ -79,22 +84,24 @@ def show_time():
     if now % 2 == 0:
         hat.clear_rect(8, 1, 1, 5)
     hat.show()
-    return time_string,x_coord
+    return time_string, x_coord
 
 def get_temp_str(temperature):
-    return " "+str(round(temperature)),0
+    """ get the string version of temp, and x
+    """
+    return " "+str(round(temperature)), 0
 
 def show_temp(temperature):
     """ show the current temperature
     """
     hat.clear_rect(0, 1, 17, 6)
-    temp_str,x_coord = get_temp_str(temperature)
+    temp_str, x_coord = get_temp_str(temperature)
     hat.write_string(temp_str,
                      y=1,
                      font=font5x5,
                      brightness=BRIGHTNESS)
 
-    return temp_str,x_coord
+    return temp_str, x_coord
 
 def main():
     """ mainline
@@ -112,14 +119,11 @@ def main():
 
     weather_key = os.environ["SLACK_BOT_WEATHER_KEY"]
 
-    cw = CurrentWeather("30022", weather_key, 60)
+    weather = CurrentWeather("30022", weather_key, 60)
     poller = SlackPoller(slack_bot_token, verbose)
 
     processor = Processor(verbose)
-    processor.add_processor(cw)
-    processor.add_processor(poller)
-
-    processor.start()
+    processor.add_processor(weather).add_processor(poller).start()
 
     showing_time = True
     prev_string = ""
@@ -134,18 +138,18 @@ def main():
 
             if time.time() > last_change_time + linger_time:
                 if showing_time:
-                    next_string,next_x = get_temp_str(cw.get_temperature())
+                    next_string, next_x = get_temp_str(weather.get_temperature())
                 else:
-                    next_string,next_x = get_time_str()
+                    next_string, next_x = get_time_str()
 
                 showing_time = not showing_time
                 fade_text(prev_string, next_string, prev_x, next_x, 1)
                 last_change_time = time.time()
 
             if showing_time:
-                prev_string,prev_x = show_time()
+                prev_string, prev_x = show_time()
             else:
-                prev_string,prev_x = show_temp(cw.get_temperature())
+                prev_string, prev_x = show_temp(weather.get_temperature())
 
             new_unreads = poller.get_unread_count()
             if unread_count != new_unreads:
@@ -165,8 +169,8 @@ def main():
 
 if __name__ == "__main__":
 
-    debug = False
-    if debug:
+    DEBUG = False
+    if DEBUG:
         show_unreads(0, 5)
         time.sleep(.5)
         show_unreads(5, 6)

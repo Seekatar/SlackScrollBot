@@ -45,6 +45,7 @@ class Processor(threading.Thread):
         """ add a processor, not thread safe so call before running
         """
         self.processors.append(processor)
+        return self
 
     def get_loop_count(self):
         """ get number of time we've looped, to see if alive
@@ -53,7 +54,7 @@ class Processor(threading.Thread):
             return self.loop_count
 
     def run(self):
-        """ run the processors
+        """ run the processors, thread override
         """
         for processor in self.processors:
             processor.setup()
