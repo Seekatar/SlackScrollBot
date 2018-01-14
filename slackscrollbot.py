@@ -3,7 +3,11 @@ import os
 import time
 import scrollphathd as hat
 from scrollphathd.fonts import font5x5
-import slackstatus
+from processor import Processor
+from slackstatus import SlackPoller
+from current_weather import CurrentWeather
+
+
 
 hat.rotate(180)
 BRIGHTNESS = .25
@@ -33,13 +37,26 @@ def main():
     """ mainline
     """
     unread_count = -1
+    verbose = True
 
     if not "SLACK_BOT_TOKEN" in os.environ:
         raise "Must supply SLACK_BOT_TOKEN in envrion"
 
-    slack_bot_token = os.environ["SLACK_BOT_TOKEN"]
+    slack_bot_token = os.environ["SLACK_BOT_WEATHER_KEY"]
 
-    poller = slackstatus.start_poller(slack_bot_token)
+    if not "SLACK_BOT_WEATHER_KEY" in os.environ:
+        raise "Must supply SLACK_BOT_WEATHER_KEY in envrion"
+
+    weather_key = os.environ["SLACK_BOT_WEATHER_KEY"]
+
+    cw = CurrentWeather("30022", weather_key, 60)
+    poller = SlackPoller(slack_bot_token, verbose)
+
+    processor = Processor(verbose)
+    processor.add_processor(cw)
+    processor.add_processor(poller)
+
+    processor.start()
 
     try:
         while True:
@@ -66,7 +83,7 @@ def main():
             unread_count = new_unreads
             time.sleep(.5)
     except KeyboardInterrupt:
-        poller.stop()
+        processor.stop()
 
 if __name__ == "__main__":
     show_unreads(0, 5)
