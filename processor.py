@@ -62,15 +62,14 @@ class Processor(threading.Thread):
         sleep_sec = 1
         while not self.stopped:
             now = time.time()
-            min_next_call = now+1000
             for processor in self.processors:
                 if processor.next_call <= now:
                     delay = processor.process()
-                    processor.next_call = now + delay
-                    if processor.next_call < min_next_call:
-                        min_next_call = processor.next_call
-                    self.__log_msg__("ran ", processor.name, "and next call is",
-                                     time.asctime(time.localtime(min_next_call)))
+                    processor.next_call = time.time() + delay
+                    self.__log_msg__("ran ", processor.name, "at", time.asctime(time.localtime(now)),
+                                     "and next call is at",
+                                     time.asctime(time.localtime(processor.next_call)),
+                                     "since delay is", str(delay))
             with self.lock:
                 self.loop_count += 1
             time.sleep(sleep_sec)

@@ -120,7 +120,7 @@ def main():
     weather_key = os.environ["SLACK_BOT_WEATHER_KEY"]
 
     weather = CurrentWeather("30022", weather_key, 60)
-    poller = SlackPoller(slack_bot_token, verbose)
+    poller = SlackPoller(slack_bot_token, 10, verbose)
 
     processor = Processor(verbose)
     processor.add_processor(weather).add_processor(poller).start()
