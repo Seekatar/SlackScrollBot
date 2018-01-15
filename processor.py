@@ -59,10 +59,10 @@ class Processor(threading.Thread):
         for processor in self.processors:
             processor.setup()
 
-        now = time.time()
-        min_next_call = now+1000
         sleep_sec = 1
         while not self.stopped:
+            now = time.time()
+            min_next_call = now+1000
             for processor in self.processors:
                 if processor.next_call <= now:
                     delay = processor.process()

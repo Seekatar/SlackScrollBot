@@ -36,7 +36,7 @@ class SlackPoller(Runner):
     """ Background thrad to do polling to Slack
     """
 
-    def __init__(self, slack_bot_token: str, verbose=False):
+    def __init__(self, slack_bot_token: str, poll_rate: int=10, verbose=False):
         super(SlackPoller, self).__init__("SlackPoller")
         self.slack_bot_token = slack_bot_token
         self.slack_client = None
@@ -45,7 +45,7 @@ class SlackPoller(Runner):
         self.verbose = verbose
         self.channel_counts = {}
         self.user_id = None
-        self.delay = 5
+        self.delay = poll_rate
 
     def __check_result__(self, result):
         if result["ok"]:
