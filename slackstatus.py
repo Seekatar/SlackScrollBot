@@ -11,6 +11,7 @@ import traceback
 from enum import Enum
 from slackclient import SlackClient
 from processor import Runner
+from websocket import WebSocketConnectionClosedException
 
 # pylint: disable=W0703
 
@@ -36,7 +37,7 @@ class SlackPoller(Runner):
     """ Background thrad to do polling to Slack
     """
 
-    def __init__(self, slack_bot_token: str, poll_rate: int=10, verbose=False):
+    def __init__(self, slack_bot_token: str, poll_rate: int = 10, verbose=False):
         super(SlackPoller, self).__init__("SlackPoller")
         self.slack_bot_token = slack_bot_token
         self.slack_client = None
@@ -46,6 +47,7 @@ class SlackPoller(Runner):
         self.channel_counts = {}
         self.user_id = None
         self.delay = poll_rate
+        self.reconnects = 0
 
     def __check_result__(self, result):
         if result["ok"]:
@@ -72,6 +74,11 @@ class SlackPoller(Runner):
         with self.lock:
             self.unread_count = unreads
         print("New unread count is", unreads)
+
+    def __reconnect__(self):
+        time.sleep(self.reconnects)
+        self.setup()
+        self.reconnects += 1
 
     def setup(self):
         self.slack_client = SlackClient(self.slack_bot_token)
@@ -118,12 +125,16 @@ class SlackPoller(Runner):
                     self.__set_unreads__()
             time.sleep(1)
         except ConnectionAbortedError as abort_exception:
-            print("Lost connection, TODO retry", abort_exception)
+            print("Lost connection, retrying", abort_exception)
+            self.__reconnect__()
+        except WebSocketConnectionClosedException as conn_exception:
+            print("Socket closed, retrying", conn_exception)
+            self.__reconnect__()
         except Exception as exception:
             if "event" in dir():
                 print("Exception in run thread on event", event, exception, type(exception))
             else:
-                print("Exception", exception, type(exception))
+                print("Exception in run thread", exception, type(exception))
             traceback.print_tb(sys.exc_info()[2])
 
         return self.delay
