@@ -71,7 +71,7 @@ def get_time_str():
 def show_time():
     """ show the time
     """
-    hat.clear_rect(0, 1, 17, 6)
+    hat.clear_rect(0, 1, 17, 5)
     time_string, x_coord = get_time_str()
     hat.write_string(time_string,
                      x=x_coord, y=1,
@@ -94,7 +94,7 @@ def get_temp_str(temperature):
 def show_temp(temperature):
     """ show the current temperature
     """
-    hat.clear_rect(0, 1, 17, 6)
+    hat.clear_rect(0, 1, 17, 5)
     temp_str, x_coord = get_temp_str(temperature)
     hat.write_string(temp_str,
                      y=1,
