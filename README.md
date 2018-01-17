@@ -13,3 +13,4 @@ http://www.stuffaboutcode.com/2012/06/raspberry-pi-run-program-at-start-up.html
 * Shows temperature
 * Fades between time and temparture
 * Blinks a pixel to indicate the background thread that gets counts and temp is still running
+
