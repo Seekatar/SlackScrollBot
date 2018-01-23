@@ -68,8 +68,8 @@ class SlackPoller(Runner):
     def __set_unreads__(self):
         unreads = 0
         for channel in self.channel_counts.values():
-            if self.verbose:
-                print(channel.name, "has", channel.unread, "unreads")
+            if self.verbose and channel.unread != 0:
+                print(channel.unread, "unread for", channel.name)
             unreads += channel.unread
         with self.lock:
             self.unread_count = unreads

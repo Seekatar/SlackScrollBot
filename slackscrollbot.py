@@ -107,7 +107,7 @@ def main():
     """ mainline
     """
     unread_count = -1
-    verbose = True
+    verbose = False
 
     if not "SLACK_BOT_TOKEN" in os.environ:
         raise "Must supply SLACK_BOT_TOKEN in envrion"
@@ -120,7 +120,7 @@ def main():
     weather_key = os.environ["SLACK_BOT_WEATHER_KEY"]
 
     weather = CurrentWeather("30022", weather_key, 60)
-    poller = SlackPoller(slack_bot_token, 10, verbose)
+    poller = SlackPoller(slack_bot_token, 2, verbose)
 
     processor = Processor(verbose)
     processor.add_processor(weather).add_processor(poller).start()
