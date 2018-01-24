@@ -10,8 +10,8 @@ import threading
 import traceback
 from enum import Enum
 from slackclient import SlackClient
-from processor import Runner
 from websocket import WebSocketConnectionClosedException
+from processor import Runner
 
 # pylint: disable=W0703
 

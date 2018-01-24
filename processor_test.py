@@ -5,6 +5,14 @@ import processor
 import slackstatus
 import current_weather
 
+class Thrower(processor.Runner):
+
+    def __init__(self):
+        super(Thrower,self).__init__("Thrower")
+
+    def process(self):
+        raise Exception("ow ow ow")
+
 if __name__ == "__main__":
     key = os.environ["SLACK_BOT_WEATHER_KEY"]
     cw = current_weather.CurrentWeather("30022", key, 60)
@@ -16,6 +24,7 @@ if __name__ == "__main__":
 
     processor.add_processor(cw)
     processor.add_processor(slack_poller)
+    processor.add_processor(Thrower())
 
     processor.start()
 

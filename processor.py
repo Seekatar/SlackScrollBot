@@ -1,7 +1,10 @@
 """ Module for running stuff
+sudo mkdir /var/slackscrollbot
+sudo chmod 0777 /var/slackscrollbot
 """
 import time
 import threading
+import logging
 
 class Runner:
     """ Runner object
@@ -26,7 +29,7 @@ class Runner:
         pass
 
 class Processor(threading.Thread):
-    """ Background thrad to get data for display
+    """ Background thread to get data for display
     """
 
     def __init__(self, verbose: bool = False):
@@ -36,6 +39,7 @@ class Processor(threading.Thread):
         self.verbose = verbose
         self.loop_count = 0
         self.lock = threading.Lock()
+        logging.basicConfig(filename="/var/slackscrollbot/log.txt", level=logging.WARNING)
 
     def __log_msg__(self, msg, *args):
         if self.verbose:
@@ -64,7 +68,13 @@ class Processor(threading.Thread):
             now = time.time()
             for processor in self.processors:
                 if processor.next_call <= now:
-                    delay = processor.process()
+                    delay = 5
+                    try:
+                        delay = processor.process()
+                    except Exception as e:
+                        logging.exception(time.asctime(time.localtime(time.time()))+\
+                                        " Exception from processor "+processor.name)
+
                     processor.next_call = time.time() + delay
                     self.__log_msg__("ran ", processor.name, "at", time.asctime(time.localtime(now)),
                                      "and next call is at",
