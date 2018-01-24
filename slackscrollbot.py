@@ -3,6 +3,7 @@
 """
 import os
 import time
+import argparse
 import scrollphathd as hat
 from scrollphathd.fonts import font5x5
 from processor import Processor
@@ -117,10 +118,17 @@ def main():
     if not "SLACK_BOT_WEATHER_KEY" in os.environ:
         raise "Must supply SLACK_BOT_WEATHER_KEY in envrion"
 
+    parser = argparse.ArgumentParser(description="SlackScroll Bot")
+    parser.add_argument('--zip',type=str,help="Zip code for temperature",default="30022")
+    parser.add_argument('--slackPoll',type=int,help="Slack polling rate in seconds",default=2)
+    parser.add_argument('--weatherPoll',type=int,help="Weather rate in seconds",default=60)
+    parser.add_argument('--linger',type=int,help="How long to show an item in seconds",default=7)
+    args = parser.parse_args()
+
     weather_key = os.environ["SLACK_BOT_WEATHER_KEY"]
 
-    weather = CurrentWeather("30022", weather_key, 60)
-    poller = SlackPoller(slack_bot_token, 2, verbose)
+    weather = CurrentWeather(args.zip, weather_key, args.weatherPoll)
+    poller = SlackPoller(slack_bot_token, args.slackPoll, verbose)
 
     processor = Processor(verbose)
     processor.add_processor(weather).add_processor(poller).start()
@@ -128,7 +136,7 @@ def main():
     showing_time = True
     prev_string = ""
     prev_x = 1
-    linger_time = 10
+    linger_time = args.linger
     last_change_time = time.time()
     last_loop_count = 0
     loop_brightness = 1
