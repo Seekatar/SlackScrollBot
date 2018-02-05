@@ -55,7 +55,7 @@ def show_unreads(prev_count, new_count):
     for i in range(new_count):
         hat.set_pixel(i, 6, BRIGHTNESS)
         hat.show()
-    for i in range(new_count-1, prev_count):
+    for i in range(new_count, prev_count):
         hat.set_pixel(i, 6, 0)
         hat.show()
 
@@ -122,7 +122,7 @@ def main():
     parser.add_argument('--zip',type=str,help="Zip code for temperature",default="30022")
     parser.add_argument('--slackPoll',type=int,help="Slack polling rate in seconds",default=2)
     parser.add_argument('--weatherPoll',type=int,help="Weather rate in seconds",default=60)
-    parser.add_argument('--linger',type=int,help="How long to show an item in seconds",default=7)
+    parser.add_argument('--linger',type=int,help="How long to show an item in seconds",default=3)
     args = parser.parse_args()
 
     weather_key = os.environ["SLACK_BOT_WEATHER_KEY"]
@@ -181,8 +181,9 @@ if __name__ == "__main__":
     if DEBUG:
         show_unreads(0, 5)
         time.sleep(.5)
-        show_unreads(5, 6)
-        time.sleep(.5)
+        show_unreads(5, 1)
+        print("5 to 1")
+        time.sleep(3)
         show_unreads(6, 9)
         time.sleep(.5)
         show_unreads(9, 9)
@@ -196,6 +197,7 @@ if __name__ == "__main__":
         show_unreads(16, 20)
         print("20")
         time.sleep(5)
+        exit(0)
 
     main()
     print("All done")
