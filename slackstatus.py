@@ -69,11 +69,11 @@ class SlackPoller(Runner):
         unreads = 0
         for channel in self.channel_counts.values():
             if self.verbose and channel.unread != 0:
-                print(channel.unread, "unread for", channel.name)
+                print(channel.unread, "unreads for", channel.name)
             unreads += channel.unread
         with self.lock:
             self.unread_count = unreads
-        print("New unread count is", unreads)
+        print("SlackStatus: New unread count is", unreads)
 
     def __reconnect__(self):
         time.sleep(self.reconnects)
@@ -93,7 +93,9 @@ class SlackPoller(Runner):
             print("Try", i, "to get to Slack")
             time.sleep(5)
         if not connected:
-            raise Exception("Never connected to slack after 20 tries!")
+            msg = "Never connected to slack after 20 tries!"
+            print(msg)
+            raise Exception(msg)
 
         self.__get_unread__()
 
@@ -110,18 +112,18 @@ class SlackPoller(Runner):
         try:
             events = self.slack_client.rtm_read()
             for event in events:
-                print("Got event", event["type"])
+                print("Got event", event["type"],"in block of",len(events),"events")
                 if "unread_count_display" in event.keys():
                     ## channels = self.__get_unread__()
                     channel = self.__get_channel__(ChannelType.CONVERSATION, event)
-                    print("Set count on", channel.name, "to", event["unread_count_display"])
+                    print("    Set count on", channel.name, "to", event["unread_count_display"])
                     channel.unread = event["unread_count_display"]
                     self.__set_unreads__()
                 elif event["type"] == "message" and not "subtype" in event.keys() \
                         and not "edit" in event.keys() \
                         and event["user"] != self.user_id:
                     channel = self.__get_channel__(ChannelType.CONVERSATION, event)
-                    print("Added 1 to ", channel.name)
+                    print("   Added 1 to ", channel.name)
                     channel.unread += 1
                     self.__set_unreads__()
             time.sleep(1)
