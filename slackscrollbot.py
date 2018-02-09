@@ -167,10 +167,11 @@ def main():
             time.sleep(.5)
             loop_count = processor.get_loop_count()
 
-            if processor.hasError():
+            if processor.has_error():
                 errorPixel = BRIGHTNESS
             else:
                 errorPixel = 0
+
             hat.set_pixel(1, 0, errorPixel)
             hat.show()
 
