@@ -34,7 +34,7 @@ class Channel:
         return "%s %s %d" % (self.name, self.channel_type, self.unread)
 
 class SlackPoller(Runner):
-    """ Background thrad to do polling to Slack
+    """ Background thread to do polling to Slack
     """
 
     def __init__(self, slack_bot_token: str, poll_rate: int = 10, verbose=False):
@@ -106,6 +106,7 @@ class SlackPoller(Runner):
     def process(self):
         """ override to do work
         """
+        hasError = False
         try:
             events = self.slack_client.rtm_read()
             for event in events:
@@ -125,19 +126,22 @@ class SlackPoller(Runner):
                     self.__set_unreads__()
             time.sleep(1)
         except ConnectionAbortedError as abort_exception:
+            hasError = True
             print("Lost connection, retrying", abort_exception)
             self.__reconnect__()
         except WebSocketConnectionClosedException as conn_exception:
+            hasError = True
             print("Socket closed, retrying", conn_exception)
             self.__reconnect__()
         except Exception as exception:
+            hasError = True
             if "event" in dir():
                 print("Exception in run thread on event", event, exception, type(exception))
             else:
                 print("Exception in run thread", exception, type(exception))
             traceback.print_tb(sys.exc_info()[2])
 
-        return self.delay
+        return self.delay,hasError
 
     def __get_channel__(self, channel_type, event):
         """ get the channel, adding it if needed

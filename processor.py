@@ -5,6 +5,7 @@ sudo chmod 0777 /var/slackscrollbot
 import time
 import threading
 import logging
+from logging.handlers import RotatingFileHandler
 
 class Runner:
     """ Runner object
@@ -14,7 +15,7 @@ class Runner:
         self.name = name
 
     def process(self):
-        """ override for process, return number of seconds for next call
+        """ override for process, return number of seconds for next call and boolean indicating an error
         """
         pass
 
@@ -25,6 +26,11 @@ class Runner:
 
     def cleanup(self):
         """ override to cleanup
+        """
+        pass
+
+    def hasError(self):
+        """ last run has error
         """
         pass
 
@@ -39,7 +45,13 @@ class Processor(threading.Thread):
         self.verbose = verbose
         self.loop_count = 0
         self.lock = threading.Lock()
-        logging.basicConfig(filename="/var/slackscrollbot/log.txt", level=logging.WARNING)
+        self.hasError = False
+
+        # logging.basicConfig(filename="/var/slackscrollbot/log.txt", level=logging.WARNING)
+        logger = logging.getLogger('slackscrollbot-log')
+        handler = RotatingFileHandler("/var/slackscrollbot/log.txt", maxBytes=5000000, backupCount=3)
+        logger.addHandler(handler)
+        logger.setLevel(logging.WARNING)
 
     def __log_msg__(self, msg, *args):
         if self.verbose:
@@ -57,6 +69,12 @@ class Processor(threading.Thread):
         with self.lock:
             return self.loop_count
 
+    def has_error(self):
+        """ did we get an error last pass
+        """
+        with self.lock:
+            return self.hasError
+
     def run(self):
         """ run the processors, thread override
         """
@@ -66,12 +84,16 @@ class Processor(threading.Thread):
         sleep_sec = 1
         while not self.stopped:
             now = time.time()
+            errorInPass = False
             for processor in self.processors:
                 if processor.next_call <= now:
                     delay = 5
                     try:
-                        delay = processor.process()
-                    except Exception as e:
+                        (delay,processorError) = processor.process()
+                        if processorError:
+                            errorInPass = True
+                    except Exception:
+                        errorInPass = True
                         logging.exception(time.asctime(time.localtime(time.time()))+\
                                         " Exception from processor "+processor.name)
 
@@ -81,6 +103,7 @@ class Processor(threading.Thread):
                                      time.asctime(time.localtime(processor.next_call)),
                                      "since delay is", str(delay))
             with self.lock:
+                self.hasError = errorInPass
                 self.loop_count += 1
             time.sleep(sleep_sec)
 

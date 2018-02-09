@@ -166,6 +166,14 @@ def main():
             unread_count = new_unreads
             time.sleep(.5)
             loop_count = processor.get_loop_count()
+
+            if processor.hasError():
+                errorPixel = BRIGHTNESS
+            else:
+                errorPixel = 0
+            hat.set_pixel(1, 0, errorPixel)
+            hat.show()
+
             if loop_count != last_loop_count:
                 loop_brightness = int(not loop_brightness)
                 last_loop_count = loop_count

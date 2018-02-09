@@ -29,7 +29,7 @@ class CurrentWeather(Runner):
         result = requests.get(self.url)
         with self.lock:
             self.temperature = result.json()["main"]["temp"]
-        return self.frequency
+        return self.frequency, False
 
 if __name__ == "__main__":
     # pylint: disable=C0103
