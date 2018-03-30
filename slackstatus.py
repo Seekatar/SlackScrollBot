@@ -96,19 +96,6 @@ class SlackPoller(Runner):
         self.slack_client = SlackClient(self.slack_bot_token)
         connected = False
 
-        identity = self.slack_client.api_call(
-            "auth.test",
-            token=self.slack_client.token
-        )
-        self.user_id = identity["user_id"]
-        
-        prefs = self.slack_client.api_call(
-            "users.prefs.get",
-            token=self.slack_client.token
-        )
-        if prefs and "prefs" in prefs.keys() and "muted_channels" in prefs["prefs"].keys():
-            self.muted = prefs["prefs"]["muted_channels"].split(',')
-
         for i in range(20):
             try:
                 if self.slack_client.rtm_connect(with_team_state=False):
@@ -123,6 +110,22 @@ class SlackPoller(Runner):
             print(msg)
             raise Exception(msg)
 
+        print("About to get identity....")
+        identity = self.slack_client.api_call(
+            "auth.test",
+            token=self.slack_client.token
+        )
+        self.user_id = identity["user_id"]
+        
+        print("About to get prefs....")
+        prefs = self.slack_client.api_call(
+            "users.prefs.get",
+            token=self.slack_client.token
+        )
+        if prefs and "prefs" in prefs.keys() and "muted_channels" in prefs["prefs"].keys():
+            self.muted = prefs["prefs"]["muted_channels"].split(',')
+
+        print("Getting first unreads....")
         self.__get_unread__()
 
     def process(self):

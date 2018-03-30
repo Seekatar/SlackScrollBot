@@ -79,8 +79,10 @@ class Processor(threading.Thread):
         """ run the processors, thread override
         """
         for processor in self.processors:
+            print("About to setup",processor.name)
             processor.setup()
 
+        print("Processor running....")
         sleep_sec = 1
         while not self.stopped:
             now = time.time()
