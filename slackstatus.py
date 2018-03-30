@@ -1,6 +1,9 @@
 """
 To get legacy token
 https://api.slack.com/custom-integrations/legacy-tokens
+
+The Slack RTM API
+https://api.slack.com/rtm
 """
 
 import os
@@ -12,6 +15,7 @@ from enum import Enum
 from slackclient import SlackClient
 from websocket import WebSocketConnectionClosedException
 from processor import Runner
+from pprint import pprint
 
 # pylint: disable=W0703
 
@@ -25,11 +29,18 @@ class ChannelType(Enum):
 class Channel:
     """ Channel object
     """
-    def __init__(self, name, channel_type, unread, channel_id):
+    def __init__(self, name, channel_type, unread, channel_id, muted: bool):
         self.channel_id = channel_id
         self.name = name
         self.channel_type = channel_type
-        self.unread = unread
+        self.muted = muted
+        self.unread = 0
+        self.setUnread(unread)
+
+    def setUnread(self, count: int):
+        if not self.muted:
+            self.unread = count
+
     def __str__(self):
         return "%s %s %d" % (self.name, self.channel_type, self.unread)
 
@@ -48,6 +59,7 @@ class SlackPoller(Runner):
         self.user_id = None
         self.delay = poll_rate
         self.reconnects = 0
+        self.muted = []
 
     def __check_result__(self, result):
         if result["ok"]:
@@ -83,6 +95,20 @@ class SlackPoller(Runner):
     def setup(self):
         self.slack_client = SlackClient(self.slack_bot_token)
         connected = False
+
+        identity = self.slack_client.api_call(
+            "auth.test",
+            token=self.slack_client.token
+        )
+        self.user_id = identity["user_id"]
+        
+        prefs = self.slack_client.api_call(
+            "users.prefs.get",
+            token=self.slack_client.token
+        )
+        if prefs and "prefs" in prefs.keys() and "muted_channels" in prefs["prefs"].keys():
+            self.muted = prefs["prefs"]["muted_channels"].split(',')
+
         for i in range(20):
             try:
                 if self.slack_client.rtm_connect(with_team_state=False):
@@ -99,12 +125,6 @@ class SlackPoller(Runner):
 
         self.__get_unread__()
 
-        identity = self.slack_client.api_call(
-            "auth.test",
-            token=self.slack_client.token
-        )
-        self.user_id = identity["user_id"]
-
     def process(self):
         """ override to do work
         """
@@ -117,7 +137,7 @@ class SlackPoller(Runner):
                     ## channels = self.__get_unread__()
                     channel = self.__get_channel__(ChannelType.CONVERSATION, event)
                     print("    Set count on", channel.name, "to", event["unread_count_display"])
-                    channel.unread = event["unread_count_display"]
+                    channel.setUnread(event["unread_count_display"])
                     self.__set_unreads__()
                 elif event["type"] == "message" and not "subtype" in event.keys() \
                         and not "edit" in event.keys() \
@@ -153,7 +173,7 @@ class SlackPoller(Runner):
             return self.channel_counts[channel_id]
         else:
             print("Adding on-the-fly for", event)
-            new_channel = Channel("Added one", channel_type, 0, channel_id)
+            new_channel = Channel("Added one", channel_type, 0, channel_id, channel_id in self.muted)
             self.channel_counts[channel_id] = new_channel
             return new_channel
 
@@ -182,7 +202,8 @@ class SlackPoller(Runner):
             self.__check_result__(channel)
             self.channel_counts[y["id"]] = Channel(y["name"], ChannelType.PUBLIC,
                                                    channel["channel"]["unread_count_display"],
-                                                   y["id"])
+                                                   y["id"],
+                                                   y["id"] in self.muted)
 
         private_channels = self.slack_client.api_call(
             "groups.list",
@@ -197,17 +218,19 @@ class SlackPoller(Runner):
                                   if q != 'mpdm' and len(q) > 1])
                 self.channel_counts[channel["id"]] = Channel(name, ChannelType.CONVERSATION,
                                                              channel["unread_count_display"],
-                                                             channel["id"])
+                                                             channel["id"],
+                                                             channel["id"] in self.muted)
             else:
                 self.channel_counts[channel["id"]] = Channel(channel["name"], ChannelType.PRIVATE,
                                                              channel["unread_count_display"],
-                                                             channel["id"])
+                                                             channel["id"],
+                                                             channel["id"] in self.muted)
         self.__set_unreads__()
 
 if __name__ == "__main__":
     # pylint: disable=C0103
     key = os.environ["SLACK_BOT_TOKEN"]
-    sp = SlackPoller(key, True)
+    sp = SlackPoller(key, 10, True)
     sp.setup()
     sp.process()
     print("Current count is", sp.get_unread_count())
