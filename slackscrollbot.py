@@ -107,7 +107,7 @@ def show_temp(temperature):
 def main():
     """ mainline
     """
-    unread_count = -1
+    # unread_count = -1
     verbose = False
 
     if not "SLACK_BOT_TOKEN" in os.environ:
@@ -159,12 +159,12 @@ def main():
             else:
                 prev_string, prev_x = show_temp(weather.get_temperature())
 
-            new_unreads = poller.get_unread_count()
-            if unread_count != new_unreads:
-                print("New count for UI is", new_unreads)
-                show_unreads(unread_count, new_unreads)
-            unread_count = new_unreads
-            time.sleep(.5)
+            # new_unreads = poller.get_unread_count()
+            # if unread_count != new_unreads:
+            #     print("New count for UI is", new_unreads)
+            #     show_unreads(unread_count, new_unreads)
+            # unread_count = new_unreads
+            # time.sleep(.5)
             loop_count = processor.get_loop_count()
 
             if processor.has_error():
