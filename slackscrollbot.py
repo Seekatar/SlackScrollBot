@@ -128,10 +128,12 @@ def main():
     weather_key = os.environ["SLACK_BOT_WEATHER_KEY"]
 
     weather = CurrentWeather(args.zip, weather_key, args.weatherPoll)
-    poller = SlackPoller(slack_bot_token, args.slackPoll, verbose)
+    # poller = SlackPoller(slack_bot_token, args.slackPoll, verbose)
 
     processor = Processor(verbose)
-    processor.add_processor(weather).add_processor(poller).start()
+    processor.add_processor(weather)  
+    # processor.add_processor(poller)
+    processor.start()
 
     showing_time = True
     prev_string = ""
