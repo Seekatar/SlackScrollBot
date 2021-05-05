@@ -33,6 +33,8 @@ class CurrentWeather(Runner):
 
 if __name__ == "__main__":
     # pylint: disable=C0103
+    if not "SLACK_BOT_WEATHER_KEY" in os.environ:
+        raise "Must supply SLACK_BOT_WEATHER_KEY in envrion, e.g. export SLACK_BOT_WEATHER_KEY='...' "
     key = os.environ["SLACK_BOT_WEATHER_KEY"]
     cw = CurrentWeather("30022", key, 60)
     cw.process()

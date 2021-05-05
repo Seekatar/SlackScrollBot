@@ -1,5 +1,5 @@
 #! /bin/sh
-# /etc/init.d/slackscrollbot 
+# /etc/init.d/slackscrollbot
 
 # largely from http://www.stuffaboutcode.com/2012/06/raspberry-pi-run-program-at-start-up.html
 
@@ -22,7 +22,7 @@ case "$1" in
     # run application you want to start
     cd /home/pi/SlackScrollBot
     . ./token.sh
-    python ./slackscrollbot.py
+    python ./slackscrollbot.py &
     ;;
   stop)
     echo "Stopping slackscrollbot"

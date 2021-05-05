@@ -122,7 +122,7 @@ def main():
     parser.add_argument('--zip',type=str,help="Zip code for temperature",default="30022")
     parser.add_argument('--slackPoll',type=int,help="Slack polling rate in seconds",default=2)
     parser.add_argument('--weatherPoll',type=int,help="Weather rate in seconds",default=60)
-    parser.add_argument('--linger',type=int,help="How long to show an item in seconds",default=3)
+    parser.add_argument('--linger',type=int,help="How long to show an item in seconds",default=1)
     args = parser.parse_args()
 
     weather_key = os.environ["SLACK_BOT_WEATHER_KEY"]
@@ -131,7 +131,7 @@ def main():
     # poller = SlackPoller(slack_bot_token, args.slackPoll, verbose)
 
     processor = Processor(verbose)
-    processor.add_processor(weather)  
+    processor.add_processor(weather)
     # processor.add_processor(poller)
     processor.start()
 
