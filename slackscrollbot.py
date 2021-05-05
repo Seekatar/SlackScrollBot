@@ -5,6 +5,9 @@ import os
 import time
 import argparse
 import scrollphathd as hat
+import os
+import logging
+from logging.handlers import RotatingFileHandler
 from scrollphathd.fonts import font5x5
 from processor import Processor
 from slackstatus import SlackPoller
@@ -127,6 +130,14 @@ def main():
 
     weather_key = os.environ["SLACK_BOT_WEATHER_KEY"]
 
+    handler = RotatingFileHandler("/var/slackscrollbot/log.txt", maxBytes=5000000, backupCount=3)
+    logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s',handlers=[handler],level=logging.INFO)
+    logging.info("Scrollbot starting with config:")
+    logging.info("  zip         = %s", args.zip)
+    logging.info("  slackPoll   = %d", args.slackPoll)
+    logging.info("  weatherPoll = %d", args.weatherPoll)
+    logging.info("  linger      = %d", args.linger)
+
     weather = CurrentWeather(args.zip, weather_key, args.weatherPoll)
     # poller = SlackPoller(slack_bot_token, args.slackPoll, verbose)
 
@@ -144,6 +155,7 @@ def main():
     loop_brightness = 1
 
     try:
+        errorTime = None
         while True:
 
             if time.time() > last_change_time + linger_time:
@@ -170,8 +182,14 @@ def main():
             loop_count = processor.get_loop_count()
 
             if processor.has_error():
+                if not errorTime:
+                    errorTime = time.time()
+                if time.time() > errorTime + 120:
+                    logging.fatal('Rebooting since has errors for 2 minutes')
+                    os.system('sudo reboot')
                 errorPixel = BRIGHTNESS
             else:
+                errorTime = None
                 errorPixel = 0
 
             hat.set_pixel(1, 0, errorPixel)

@@ -5,7 +5,6 @@ sudo chmod 0777 /var/slackscrollbot
 import time
 import threading
 import logging
-from logging.handlers import RotatingFileHandler
 
 class Runner:
     """ Runner object
@@ -47,13 +46,7 @@ class Processor(threading.Thread):
         self.lock = threading.Lock()
         self.hasError = False
 
-        self.logger = logging.getLogger('slackscrollbot-log')
-        handler = RotatingFileHandler("/var/slackscrollbot/log.txt", maxBytes=5000000, backupCount=3)
-        handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)s:%(message)s'))
-        handler.setLevel(logging.INFO)
-        self.logger.setLevel(logging.INFO)
-        self.logger.addHandler(handler)
-        self.logger.info("Processor starting up")
+        logging.info("Processor starting up")
 
     def __log_msg__(self, msg, *args):
         if self.verbose:
@@ -63,7 +56,7 @@ class Processor(threading.Thread):
         """ add a processor, not thread safe so call before running
         """
         self.processors.append(processor)
-        self.logger.info("Processor added %s", processor.name)
+        logging.info("Processor added %s", processor.name)
         return self
 
     def get_loop_count(self):
@@ -82,10 +75,10 @@ class Processor(threading.Thread):
         """ run the processors, thread override
         """
         for processor in self.processors:
-            self.logger.info("About to setup %s",processor.name)
+            logging.info("About to setup %s",processor.name)
             processor.setup()
 
-        self.logger.info("Processor running....")
+        logging.info("Processor running....")
 
         sleep_sec = 1
         while not self.stopped:
@@ -97,13 +90,13 @@ class Processor(threading.Thread):
                     try:
                         (delay,processorError) = processor.process()
                         if processorError:
-                            self.logger.warning("Processor %s returned error on loop %d", processor.name, self.loop_count)
+                            logging.warning("Processor %s returned error on loop %d", processor.name, self.loop_count)
                             errorInPass = True
                         else:
-                            self.logger.debug("Processor %s returned ok error on loop %d", processor.name, self.loop_count)
+                            logging.debug("Processor %s returned ok error on loop %d", processor.name, self.loop_count)
                     except Exception:
                         errorInPass = True
-                        self.logger.exception("Exception from processor %s on loop %d", processor.name, self.loop_count)
+                        logging.exception("Exception from processor %s on loop %d", processor.name, self.loop_count)
 
                     processor.next_call = time.time() + delay
                     self.__log_msg__("ran ", processor.name, "at", time.asctime(time.localtime(now)),
@@ -115,7 +108,7 @@ class Processor(threading.Thread):
                 self.hasError = errorInPass
                 self.loop_count += 1
             if hadError and not self.has_error:
-                self.logger.info('Recovered from previous errors.')
+                logging.info('Recovered from previous errors.')
             time.sleep(sleep_sec)
 
         for processor in self.processors:
