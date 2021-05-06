@@ -107,7 +107,7 @@ class Processor(threading.Thread):
             with self.lock:
                 self.hasError = errorInPass
                 self.loop_count += 1
-            if hadError and not self.has_error:
+            if hadError and not self.hasError:
                 logging.info('Recovered from previous errors.')
             time.sleep(sleep_sec)
 
