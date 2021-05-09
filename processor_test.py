@@ -22,9 +22,9 @@ if __name__ == "__main__":
 
     processor = processor.Processor(True)
 
-    processor.add_processor(cw)
-    processor.add_processor(slack_poller)
-    processor.add_processor(Thrower())
+    processor.add_runner(cw)
+    processor.add_runner(slack_poller)
+    processor.add_runner(Thrower())
 
     processor.start()
 

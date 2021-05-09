@@ -142,8 +142,8 @@ def main():
     # poller = SlackPoller(slack_bot_token, args.slackPoll, verbose)
 
     processor = Processor(verbose)
-    processor.add_processor(weather)
-    # processor.add_processor(poller)
+    processor.add_runner(weather)
+    # processor.add_runner(poller)
     processor.start()
 
     showing_time = True

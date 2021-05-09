@@ -40,7 +40,7 @@ class Processor(threading.Thread):
     def __init__(self, verbose: bool = False):
         super(Processor, self).__init__()
         self.stopped = False
-        self.processors = []
+        self.runners = []
         self.verbose = verbose
         self.loop_count = 0
         self.lock = threading.Lock()
@@ -52,11 +52,11 @@ class Processor(threading.Thread):
         if self.verbose:
             print(msg, " ".join(args))
 
-    def add_processor(self, processor: Runner):
-        """ add a processor, not thread safe so call before running
+    def add_runner(self, runner: Runner):
+        """ add a runner, not thread safe so call before running
         """
-        self.processors.append(processor)
-        logging.info("Processor added %s", processor.name)
+        self.runners.append(runner)
+        logging.info("Processor added %s", runner.name)
         return self
 
     def get_loop_count(self):
@@ -72,36 +72,34 @@ class Processor(threading.Thread):
             return self.hasError
 
     def run(self):
-        """ run the processors, thread override
+        """ run the runners, thread override
         """
-        for processor in self.processors:
-            logging.info("About to setup %s",processor.name)
-            processor.setup()
+        for runner in self.runners:
+            logging.info("About to setup %s",runner.name)
+            runner.setup()
 
         logging.info("Processor running....")
 
         sleep_sec = 1
         while not self.stopped:
             now = time.time()
-            errorInPass = False
-            for processor in self.processors:
-                if processor.next_call <= now:
+            for runner in self.runners:
+                if runner.next_call <= now:
                     delay = 5
                     try:
-                        (delay,processorError) = processor.process()
+                        (delay,processorError) = runner.process()
+                        runner.setError(processorError)
                         if processorError:
-                            logging.warning("Processor %s returned error on loop %d", processor.name, self.loop_count)
-                            errorInPass = True
+                            logging.warning("Processor %s returned error on loop %d", runner.name, self.loop_count)
                         else:
-                            logging.debug("Processor %s returned ok error on loop %d", processor.name, self.loop_count)
+                            logging.debug("Processor %s returned ok error on loop %d", runner.name, self.loop_count)
                     except Exception:
-                        errorInPass = True
-                        logging.exception("Exception from processor %s on loop %d", processor.name, self.loop_count)
+                        logging.exception("Exception from runner %s on loop %d", runner.name, self.loop_count)
 
-                    processor.next_call = time.time() + delay
-                    self.__log_msg__("ran ", processor.name, "at", time.asctime(time.localtime(now)),
+                    runner.next_call = time.time() + delay
+                    self.__log_msg__("ran ", runner.name, "at", time.asctime(time.localtime(now)),
                                      "and next call is at",
-                                     time.asctime(time.localtime(processor.next_call)),
+                                     time.asctime(time.localtime(runner.next_call)),
                                      "since delay is", str(delay))
             hadError = self.hasError
             with self.lock:
@@ -111,8 +109,8 @@ class Processor(threading.Thread):
                 logging.info('Recovered from previous errors.')
             time.sleep(sleep_sec)
 
-        for processor in self.processors:
-            processor.cleanup()
+        for runner in self.runners:
+            runner.cleanup()
 
     def stop(self):
         """ stop the thread
