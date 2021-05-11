@@ -4,11 +4,12 @@
 import os
 import time
 import argparse
-import scrollphathd as hat
-import os
 import logging
 from logging.handlers import RotatingFileHandler
+import scrollphathd as hat
 from scrollphathd.fonts import font5x5
+
+# in this project
 from processor import Processor
 from slackstatus import SlackPoller
 from current_weather import CurrentWeather
@@ -110,40 +111,52 @@ def show_temp(temperature):
 def main():
     """ mainline
     """
-    # unread_count = -1
+    unread_count = -1
     verbose = False
 
     if not "SLACK_BOT_TOKEN" in os.environ:
-        raise "Must supply SLACK_BOT_TOKEN in envrion"
-
-    slack_bot_token = os.environ["SLACK_BOT_TOKEN"]
+        slack_bot_token = os.environ["SLACK_BOT_TOKEN"]
+    else:
+        slack_bot_token = None
 
     if not "SLACK_BOT_WEATHER_KEY" in os.environ:
-        raise "Must supply SLACK_BOT_WEATHER_KEY in envrion"
+        raise ValueError("Must supply SLACK_BOT_WEATHER_KEY in os.envrion")
 
     parser = argparse.ArgumentParser(description="SlackScroll Bot")
     parser.add_argument('--zip',type=str,help="Zip code for temperature",default="30022")
     parser.add_argument('--slackPoll',type=int,help="Slack polling rate in seconds",default=2)
     parser.add_argument('--weatherPoll',type=int,help="Weather rate in seconds",default=60)
     parser.add_argument('--linger',type=int,help="How long to show an item in seconds",default=1)
+    parser.add_argument('--logLevel',type=str,help="Log level, Debug, Info, Warning, Error",default='Info')
     args = parser.parse_args()
 
     weather_key = os.environ["SLACK_BOT_WEATHER_KEY"]
 
+    numeric_level = getattr(logging, args.logLevel.upper(), None)
+    if not isinstance(numeric_level, int):
+        raise ValueError('Invalid log level: {args.logLevel}')
+
     handler = RotatingFileHandler("/var/slackscrollbot/log.txt", maxBytes=5000000, backupCount=3)
-    logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s',handlers=[handler],level=logging.INFO)
+    logging.basicConfig(format='%(asctime)s %(levelname)s:%(message)s',handlers=[handler],level=numeric_level)
+
     logging.info("Scrollbot starting with config:")
     logging.info("  zip         = %s", args.zip)
     logging.info("  slackPoll   = %d", args.slackPoll)
     logging.info("  weatherPoll = %d", args.weatherPoll)
     logging.info("  linger      = %d", args.linger)
+    logging.info("  logLevel    = %s", args.logLevel)
 
     weather = CurrentWeather(args.zip, weather_key, args.weatherPoll)
-    # poller = SlackPoller(slack_bot_token, args.slackPoll, verbose)
+    if slack_bot_token:
+        poller = SlackPoller(slack_bot_token, args.slackPoll, verbose)
+    else:
+        poller = None
+        logging.warning("Skipping starting slack since no token")
 
     processor = Processor(verbose)
     processor.add_runner(weather)
-    # processor.add_runner(poller)
+    if slack_bot_token:
+        processor.add_runner(poller)
     processor.start()
 
     showing_time = True
@@ -173,12 +186,14 @@ def main():
             else:
                 prev_string, prev_x = show_temp(weather.get_temperature())
 
-            # new_unreads = poller.get_unread_count()
-            # if unread_count != new_unreads:
-            #     print("New count for UI is", new_unreads)
-            #     show_unreads(unread_count, new_unreads)
-            # unread_count = new_unreads
-            # time.sleep(.5)
+            if poller:
+                new_unreads = poller.get_unread_count()
+                if unread_count != new_unreads:
+                    print("New count for UI is", new_unreads)
+                    show_unreads(unread_count, new_unreads)
+                unread_count = new_unreads
+                time.sleep(.5)
+
             loop_count = processor.get_loop_count()
 
             if processor.has_error():

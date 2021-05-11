@@ -12,7 +12,7 @@ import sys
 import threading
 import traceback
 from enum import Enum
-from slackclient import SlackClient
+from slack import WebClient
 from websocket import WebSocketConnectionClosedException
 from processor import Runner
 from pprint import pprint
@@ -116,7 +116,7 @@ class SlackPoller(Runner):
             token=self.slack_client.token
         )
         self.user_id = identity["user_id"]
-        
+
         print("About to get prefs....")
         prefs = self.slack_client.api_call(
             "users.prefs.get",

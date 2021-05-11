@@ -12,6 +12,7 @@ class Runner:
     def __init__(self, name: str):
         self.next_call = 0
         self.name = name
+        self.has_error = False
 
     def process(self):
         """ override for process, return number of seconds for next call and boolean indicating an error
@@ -31,7 +32,12 @@ class Runner:
     def hasError(self):
         """ last run has error
         """
-        pass
+        return self.has_error
+
+    def setError(self, error: bool):
+        """ sets the last run error
+        """
+        self.has_error = error
 
 class Processor(threading.Thread):
     """ Background thread to get data for display
@@ -83,6 +89,7 @@ class Processor(threading.Thread):
         sleep_sec = 1
         while not self.stopped:
             now = time.time()
+            errorInPass = False
             for runner in self.runners:
                 if runner.next_call <= now:
                     delay = 5
@@ -94,6 +101,7 @@ class Processor(threading.Thread):
                         else:
                             logging.debug("Processor %s returned ok error on loop %d", runner.name, self.loop_count)
                     except Exception:
+                        runner.setError(True)
                         logging.exception("Exception from runner %s on loop %d", runner.name, self.loop_count)
 
                     runner.next_call = time.time() + delay
@@ -101,6 +109,8 @@ class Processor(threading.Thread):
                                      "and next call is at",
                                      time.asctime(time.localtime(runner.next_call)),
                                      "since delay is", str(delay))
+                errorInPass = errorInPass or runner.has_error
+
             hadError = self.hasError
             with self.lock:
                 self.hasError = errorInPass
