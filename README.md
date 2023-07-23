@@ -38,3 +38,11 @@ tail /var/slackscrollbot/log.txt -f
 killall -s 2 python3
 
 ```
+
+## Docker
+
+Used VSCode Ctrl+Shift+P Docker Add file to add Dockerfile
+
+```bash
+pip freeze > requirements.txt
+```

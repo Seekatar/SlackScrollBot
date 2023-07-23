@@ -114,7 +114,7 @@ def main():
     unread_count = -1
     verbose = False
 
-    if not "SLACK_BOT_TOKEN" in os.environ:
+    if "SLACK_BOT_TOKEN" in os.environ:
         slack_bot_token = os.environ["SLACK_BOT_TOKEN"]
     else:
         slack_bot_token = None

@@ -13,7 +13,7 @@ import threading
 import traceback
 from enum import Enum
 from slack import WebClient
-from websocket import WebSocketConnectionClosedException
+# from websocket import WebSocketConnectionClosedException
 from processor import Runner
 from pprint import pprint
 
@@ -93,7 +93,7 @@ class SlackPoller(Runner):
         self.reconnects += 1
 
     def setup(self):
-        self.slack_client = SlackClient(self.slack_bot_token)
+        self.slack_client = WebClient(self.slack_bot_token)
         connected = False
 
         for i in range(20):
@@ -154,10 +154,10 @@ class SlackPoller(Runner):
             hasError = True
             print("Lost connection, retrying", abort_exception)
             self.__reconnect__()
-        except WebSocketConnectionClosedException as conn_exception:
-            hasError = True
-            print("Socket closed, retrying", conn_exception)
-            self.__reconnect__()
+        # except WebSocketConnectionClosedException as conn_exception:
+        #     hasError = True
+        #     print("Socket closed, retrying", conn_exception)
+        #     self.__reconnect__()
         except Exception as exception:
             hasError = True
             if "event" in dir():
