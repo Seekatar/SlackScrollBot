@@ -148,15 +148,15 @@ def main():
 
     weather = CurrentWeather(args.zip, weather_key, args.weatherPoll)
     if slack_bot_token:
-        poller = SlackPoller(slack_bot_token, args.slackPoll, verbose)
+        slackPoller = SlackPoller(slack_bot_token, args.slackPoll, verbose)
     else:
-        poller = None
+        slackPoller = None
         logging.warning("Skipping starting slack since no token")
 
     processor = Processor(verbose)
     processor.add_runner(weather)
     if slack_bot_token:
-        processor.add_runner(poller)
+        processor.add_runner(slackPoller)
     processor.start()
 
     showing_time = True
@@ -186,8 +186,8 @@ def main():
             else:
                 prev_string, prev_x = show_temp(weather.get_temperature())
 
-            if poller:
-                new_unreads = poller.get_unread_count()
+            if slackPoller:
+                new_unreads = slackPoller.get_unread_count()
                 if unread_count != new_unreads:
                     print("New count for UI is", new_unreads)
                     show_unreads(unread_count, new_unreads)
