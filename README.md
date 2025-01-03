@@ -2,7 +2,7 @@
 
 These are some Python scripts to get unread counts from Slack and temperature from openweathermap to display on [Pimoroni's Scroll Phat HD](https://shop.pimoroni.com/products/scroll-phat-hd).
 
-> NOTE: The RPi branch has a variation currently running on the Raspberry Pi Zero W.
+> NOTE: The `RPi` branch has a variation currently running on the Raspberry Pi Zero W.
 
 ## Setup
 
@@ -24,12 +24,20 @@ sudo chmod 0777 /var/slackscrollbot
 touch /var/slackscrollbot/log.txt
 ```
 
+## Running it
+
+After updating the Pi Zero W to Pi OS update of January 2025, you must run in a Python vm. I created one for my user on the Pi Zero W. To run it you have to switch to the vm.
+
+```bash
+. ./token.sh                         # sets the environment variables
+. /home/seekatar/.env/bin/activate   # activates the virtual environment
+python3 ./slackscrollbot.py --logLevel=Debug
+deactivate                           # deactivates the virtual environment
+```
+
 I use a `token.sh` script to set the tokens as an environment variables `SLACK_BOT_TOKEN` (optional) and `SLACK_BOT_WEATHER_KEY` (required) and then dot-source that into the shell session.
 
-~~Directions for starting it on startup using `slackscrollbot` script via init.d see
-[here](http://www.stuffaboutcode.com/2012/06/raspberry-pi-run-program-at-start-up.html)~~
-
-I used /etc/rc.local instead. [Five ways to run a program at startup](https://www.dexterindustries.com/howto/run-a-program-on-your-raspberry-pi-at-startup/)
+I used `/etc/rc.local` to run the app on startup. [Five ways to run a program at startup](https://www.dexterindustries.com/howto/run-a-program-on-your-raspberry-pi-at-startup/)
 
 ## Features
 
