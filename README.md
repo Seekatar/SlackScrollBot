@@ -2,16 +2,26 @@
 
 These are some Python scripts to get unread counts from Slack and temperature from openweathermap to display on [Pimoroni's Scroll Phat HD](https://shop.pimoroni.com/products/scroll-phat-hd).
 
+> NOTE: The RPi branch has a variation currently running on the Raspberry Pi Zero W.
+
 ## Setup
 
 Install these dependent Python modules
 
 ```bash
-sudo apt-get install python3-scrollphathd
-sudo apt-get install python3-requests
-sudo apt install python3-pip
-sudo apt install python3-websocket
-sudo pip3 install slackclient
+sudo apt-get install libopenblas-dev
+pip3 install scrollphathd
+pip3 install slackclient
+pip3 install websocket-client # for slack client
+pip3 install requests         # for openweathermap
+```
+
+Create the log folder and file
+
+```bash
+sudo mkdir /var/slackscrollbot
+sudo chmod 0777 /var/slackscrollbot
+touch /var/slackscrollbot/log.txt
 ```
 
 I use a `token.sh` script to set the tokens as an environment variables `SLACK_BOT_TOKEN` (optional) and `SLACK_BOT_WEATHER_KEY` (required) and then dot-source that into the shell session.
@@ -33,7 +43,7 @@ I used /etc/rc.local instead. [Five ways to run a program at startup](https://ww
 ## Testing
 
 ```bash
-(cd /home/pi/SlackScrollBot/ && . ./token.sh && python3 ./slackscrollbot.py --logLevel=Debug 2>&1 > /var/slackscrollbot/std.log ) &
+(cd /home/seekatar/SlackScrollBot/ && . ./token.sh && . /home/seekatar/.env/bin/activate && python3 ./slackscrollbot.py --logLevel=Debug 2>&1 > /var/slackscrollbot/std.log ) &
 tail /var/slackscrollbot/log.txt -f
 killall -s 2 python3
 
